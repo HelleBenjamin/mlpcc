@@ -13,7 +13,7 @@ int forward_pass(mlp *nn) {
       sum += nn->il.neuron[j] * nn->hl.input_weights[j][i];
     }
 
-    nn->hl.neuron[0][i] = ACTIVATION_HIDDEN ? sigmoid(sum) : relu(sum);
+    nn->hl.neuron[0][i] = relu(sum);
   }
 
   /* hidden layer n-1 to hidden layer n*/
@@ -25,7 +25,7 @@ int forward_pass(mlp *nn) {
         sum += nn->hl.neuron[layer-1][j] * nn->hl.hidden_weights[layer-1][j][i];
       }
 
-      nn->hl.neuron[layer][i] = ACTIVATION_HIDDEN ? sigmoid(sum) : relu(sum);
+      nn->hl.neuron[layer][i] = relu(sum);
     }
   }
 

@@ -7,10 +7,6 @@ float relu_derivative(float val) {
   return val > 0.0f ? 1.0f : 0.0f;
 }
 
-float sigmoid_derivative(float val) {
-  return val * (1.0f - val);
-}
-
 float rand_weight(void) {
   return ((float)rand() / (float)RAND_MAX - 0.5f) * 0.2f;
 }
@@ -94,7 +90,7 @@ int backpropagation(mlp *nn, float target[SIZE_OUTPUT]) {
         error += hidden_delta[layer+1][next] * nn->hl.hidden_weights[layer][h][next];
       }
 
-      hidden_delta[layer][h] = error * relu_derivative(nn->hl.neuron[last][h]);
+      hidden_delta[layer][h] = error * relu_derivative(nn->hl.neuron[layer][h]);
     }
   }
 
