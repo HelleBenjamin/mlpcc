@@ -5,6 +5,16 @@ Simple neural network implementation in C.
 It supports training and running a model.
 Currently at very early phase, so many missing features.
 
+Format
+------
+
+MLPCC accepts following format as dataset:
+- int num_samples
+- float samples_x[num_samples*SIZE_INPUT]
+- float samples_y[num_samples*SIZE_OUTPUT]
+
+in raw binary format.
+
 License
 -------
 Copyright (C) 2026 Benjamin Helle

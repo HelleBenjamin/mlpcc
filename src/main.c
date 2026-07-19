@@ -13,21 +13,11 @@ float sigmoid(float val) {
   return 1.0f / (1.0f+expf(-val));
 }
 
-/* XOR logic gate*/
-#define NUM_SAMPLES 4
-float xs[NUM_SAMPLES][SIZE_INPUT] = {
-  {0.0f, 0.0f},
-  {0.0f, 1.0f},
-  {1.0f, 0.0f},
-  {1.0f, 1.0f},
-};
-
-float ys[NUM_SAMPLES][SIZE_OUTPUT] = {
-  {0.0f},
-  {1.0f},
-  {1.0f},
-  {0.0f},
-};
+/* training dataset */
+char* dataset;
+int num_samples = 0;
+float *sample_x;
+float *sample_y;
 
 void set_input(mlp *nn, float x[SIZE_INPUT]) {
   for (int i = 0; i < SIZE_INPUT; i++) { /* copy to the nn*/
@@ -36,10 +26,10 @@ void set_input(mlp *nn, float x[SIZE_INPUT]) {
 }
 
 
-void export_model(mlp *nn, char * fname) {
+void export_model(mlp *nn, char *fname) {
   FILE* f = fopen(fname, "wb");
   if (!f) {
-    printf("Faile to open file");
+    printf("Failed to open file");
     return;
   }
   char *version = "mlpcc"; /* or checksum*/
@@ -55,10 +45,10 @@ void export_model(mlp *nn, char * fname) {
   fclose(f);
 }
 
-void load_model(mlp *nn, char * fname) {
+void load_model(mlp *nn, char *fname) {
   FILE* f = fopen(fname, "rb");
   if (!f) {
-    printf("Faile to open file");
+    printf("Failed to open file");
     return;
   }
   char *version = "mlpcc"; /* or checksum*/
@@ -78,6 +68,38 @@ void load_model(mlp *nn, char * fname) {
   fclose(f);
 }
 
+void load_samples(char *fname) {
+  /* read x, y samples, and num_samples*/
+  /* file format
+  *  int num_samples
+  *  float **x;
+  *  float **y;
+  */
+  FILE* f = fopen(fname, "rb");
+  if (!f) {
+    printf("Failed to open file");
+    return;
+  }
+
+  fread(&num_samples, sizeof(int), 1, f); /* number of samples*/
+
+  /* allocate and read*/
+  sample_x = (float*)malloc(num_samples*SIZE_INPUT*sizeof(float));
+  sample_y = (float*)malloc(num_samples*SIZE_OUTPUT*sizeof(float));
+
+  if (!sample_x || !sample_y) {
+    printf("Sample X/Y malloc failed\n");
+    return;
+  }
+
+  fread(sample_x, sizeof(float), (num_samples*SIZE_INPUT), f); /* input*/
+  fread(sample_y, sizeof(float), (num_samples*SIZE_OUTPUT), f); /* target*/
+
+  printf("Dataset loaded\n");
+  
+  fclose(f);
+}
+
 int main(int argc, char* argv[]) {
   mlp nn;
   char *name = NULL;
@@ -86,20 +108,20 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < argc; i++) {
     if (strcmp(argv[i], "--train") == 0) {
       init_mlp(&nn);
-      printf("Training model \"%s\" with parameters: epochs %d, lr %f\n", name, epochs, nn.learning_rate);
+      printf("Training model \"%s\" with parameters: epochs %d, lr %f. Dataset is \"%s\"\n", name, epochs, nn.learning_rate, dataset);
       for (int epoch = 0; epoch < epochs; epoch++) {
         float total_error = 0.0f;
 
-        for (int s = 0; s < NUM_SAMPLES; s++) { /* training loop*/
-          set_input(&nn, xs[s]);
+        for (int s = 0; s < num_samples; s++) { /* training loop*/
+          set_input(&nn, &sample_x[s*SIZE_INPUT]);
 
           forward_pass(&nn);
-          backpropagation(&nn, ys[s]);
+          backpropagation(&nn, &sample_y[s*SIZE_OUTPUT]);
 
           total_error += nn.error;
         }
 
-        if (epoch % 1000 == 0) {
+        if (epoch % 10 == 0) {
           printf("epoch %d error=%f\n", epoch, total_error);
         }
       }
@@ -123,9 +145,14 @@ int main(int argc, char* argv[]) {
       for (int o = 0; o < SIZE_OUTPUT; o++) {
         printf("%f ", nn.ol.neuron[o]);
       }
-    }
+    } else if (strncmp(argv[i], "--dataset=", 10) == 0) {
+      dataset = argv[i] + 10;
+      load_samples(dataset);
+    } 
   }
 
+  free(sample_x);
+  free(sample_y);
 
   /*for (int s = 0; s < NUM_SAMPLES; s++) {
     set_input(&nn, xs[s]);

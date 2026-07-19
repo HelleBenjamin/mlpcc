@@ -1,2 +1,5 @@
 mlpcc
 model.mlp
+.vscode
+dataset.bin
+class.mlp
